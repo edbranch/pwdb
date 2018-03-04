@@ -1,0 +1,9 @@
+#ifndef pwdb_config_h_included
+#define pwdb_config_h_included
+
+namespace pwdb {
+
+constexpr auto version = "@pwdb_VERSION@";
+
+} // namespace pwdb
+#endif // pwdb_config_h_included
