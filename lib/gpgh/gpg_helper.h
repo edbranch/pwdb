@@ -111,6 +111,11 @@ void print_key(std::ostream &out, gpgh::key &k,
 // create non-owning null terminated vector of gpgme_key_t from keylist
 auto keylist2kvec(const keylist &kl)->std::vector<gpgme_key_t>;
 
+// generate passwordless testing key
+class context;
+auto gen_test_key(gpgh::context &context, const std::string &recipient) ->
+    gpgh::keylist;
+
 //=============================================================================
 // gpgme_context wrapper
 //=============================================================================

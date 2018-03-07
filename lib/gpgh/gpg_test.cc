@@ -36,35 +36,12 @@ int main(int argc, const char *argv[])
     auto gpg_home = fs::current_path().append("gnupg");
     std::cout << "GPG Set to use homedir=" << gpg_home << std::endl;
     fs::create_directory(gpg_home);
+    fs::permissions(gpg_home, fs::perms::owner_all);
     std::string recipient("ctest@testson.name");
 
     try {
-        // create testing context pointed at testing home directory
-        gpgme_error_t gerr;
         gpgh::context context{gpg_home};
-
-        // try to get the testing key
-        auto key_filter = [](gpgme_key_t k)->bool
-            { return !k->revoked && !k->expired && k->can_encrypt; };
-        auto keys = context.get_keys(recipient, false, key_filter);
-        // create the testing key if it was not found and then get it
-        if(keys.size() == 0) {
-            std::cout << "Generating test key" << std::endl;
-            gerr = gpgme_op_createkey(context.get(), recipient.c_str(),
-                    "default", 0, 0, NULL, GPGME_CREATE_NOPASSWD);
-            gpgh::gerr_check(gerr, __func__);
-            keys = context.get_keys(recipient, false, key_filter);
-        }
-
-        // check and print the testing key
-        for(auto k: keys) {
-            std::cout << "Recipient:\n";
-            gpgh::print_key(std::cout, *k, "\t");
-        }
-        if(keys.size() == 0) {
-            std::cerr << "No suitable key found for " << recipient << std::endl;
-            return 1;
-        }
+        auto keys = gpgh::gen_test_key(context, recipient);
 
         //=====================================================================
         // Tests
@@ -120,9 +97,6 @@ int main(int argc, const char *argv[])
         return 1;
     } catch(const std::system_error &e) {
         std::cerr << "SYSTEM ERROR: " << e.what() << std::endl;
-        return 1;
-    } catch(const std::exception &e) {
-        std::cerr << "UNKNOWN ERROR: " << e.what() << std::endl;
         return 1;
     }
 

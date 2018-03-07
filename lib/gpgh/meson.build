@@ -2,7 +2,7 @@ cc = meson.get_compiler('cpp')
 gpgme_dep = cc.find_library('gpgme')
 
 gpgh_inc = include_directories('..')
-gpgh_lib = library('gpgh++', 'gpg_helper.cc',
+gpgh_lib = library('gpgh++', ['gpg_helper.cc', 'gen_test_key.cc'],
   include_directories: gpgh_inc,
   dependencies: gpgme_dep,
   install: true)
