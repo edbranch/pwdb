@@ -33,12 +33,14 @@ class pwdb_cmd_interp
     pwdb::db &cdb_;
     cmd_interp::interp interp_;
 
-    auto def_interp(void)->cmd_interp::interp;
+    auto def_interp(const cmd_interp::ops &ops)->cmd_interp::interp;
 public:
     pwdb_cmd_interp(void) = delete;
     pwdb_cmd_interp(const pwdb_cmd_interp&) = delete;
     pwdb_cmd_interp(pwdb_cmd_interp&&) = default;
-    pwdb_cmd_interp(pwdb::db &cdb);
+    pwdb_cmd_interp(pwdb::db &cdb, const cmd_interp::ops &ops);
+    pwdb_cmd_interp(pwdb::db &cdb) :
+        pwdb_cmd_interp(cdb, cmd_interp::readline_ops()) { ; }
     auto operator=(const pwdb_cmd_interp&)->pwdb_cmd_interp& = delete;
     auto operator=(pwdb_cmd_interp&&)->pwdb_cmd_interp& = default;
 
@@ -52,16 +54,18 @@ class rcd_cmd_interp
     pwdb::pb::Store store_;
     cmd_interp::interp interp_;
 
-    auto def_interp(void)->cmd_interp::interp;
+    auto def_interp(const cmd_interp::ops &ops)->cmd_interp::interp;
     template<typename InputIt>
     static void print_columns(InputIt begin, InputIt end) {
         cmd_interp::print_columns(std::cout, begin, end, " : ", "  ");
     }
 public:
-    rcd_cmd_interp(void);
+    rcd_cmd_interp(void) = delete;
     rcd_cmd_interp(const rcd_cmd_interp&) = delete;
     rcd_cmd_interp(rcd_cmd_interp&&) = default;
-    rcd_cmd_interp(const pwdb::pb::Store &store);
+    rcd_cmd_interp(const pwdb::pb::Store &store, const cmd_interp::ops &ops);
+    rcd_cmd_interp(const pwdb::pb::Store &store) :
+        rcd_cmd_interp(store, cmd_interp::readline_ops()) { ; }
     auto operator=(const rcd_cmd_interp&)->rcd_cmd_interp& = delete;
     auto operator=(rcd_cmd_interp&&)->rcd_cmd_interp& = default;
 

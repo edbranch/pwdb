@@ -33,12 +33,12 @@ namespace pwdb {
 // pwdb_cmd_interp
 //-----------------------------------------------------------------------------
 cmd_interp::interp pwdb_cmd_interp::
-def_interp(void)
+def_interp(const cmd_interp::ops &ops)
 {
     using A = const std::vector<std::string>;
     using cmd_interp::interp;
 
-    cmd_interp::interp d;
+    cmd_interp::interp d{ops};
     d["exit"] = { "Exit the program",
         [](A &args)->interp::result_t {
             return interp::result_exit;
@@ -236,21 +236,21 @@ def_interp(void)
 }
 
 pwdb_cmd_interp::
-pwdb_cmd_interp(pwdb::db &cdb) :
+pwdb_cmd_interp(pwdb::db &cdb, const cmd_interp::ops &ops) :
     cdb_{cdb},
-    interp_{def_interp()}
+    interp_{def_interp(ops)}
 { ; }
 
 //-----------------------------------------------------------------------------
 // rcd_cmd_interp
 //-----------------------------------------------------------------------------
 cmd_interp::interp rcd_cmd_interp::
-def_interp(void)
+def_interp(const cmd_interp::ops &ops)
 {
     using A = const std::vector<std::string>;
     using cmd_interp::interp;
 
-    cmd_interp::interp d;
+    cmd_interp::interp d{ops};
     d["exit"] = { "Exit the program",
         [](A &args)->interp::result_t {
             return interp::result_exit;
@@ -316,12 +316,8 @@ def_interp(void)
 }
 
 rcd_cmd_interp::
-rcd_cmd_interp(void) : store_{}, interp_{def_interp()}
-{ ; }
-
-rcd_cmd_interp::
-rcd_cmd_interp(const pwdb::pb::Store &store) :
-    store_{store}, interp_{def_interp()}
+rcd_cmd_interp(const pwdb::pb::Store &store, const cmd_interp::ops &ops) :
+    store_{store}, interp_{def_interp(ops)}
 { ; }
 
 void rcd_cmd_interp::
