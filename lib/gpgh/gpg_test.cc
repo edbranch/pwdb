@@ -41,10 +41,7 @@ int main(int argc, const char *argv[])
     try {
         // create testing context pointed at testing home directory
         gpgme_error_t gerr;
-        gpgh::context context{};
-        gerr = gpgme_ctx_set_engine_info(context.get(), GPGME_PROTOCOL_OpenPGP,
-                nullptr, gpg_home.c_str());
-        gpgh::gerr_check(gerr, __func__);
+        gpgh::context context{gpg_home};
 
         // try to get the testing key
         auto key_filter = [](gpgme_key_t k)->bool

@@ -187,7 +187,7 @@ keylist2kvec(const keylist &kl)
 const char *context::gpg_version = nullptr;
 
 context::
-context() : _ctx(nullptr, gpgme_release)
+context(void) : _ctx(nullptr, gpgme_release)
 {
     context::gpg_init();
     // create context
@@ -199,6 +199,16 @@ context() : _ctx(nullptr, gpgme_release)
     // set protocol
     gerr = gpgme_set_protocol(ctxp, GPGME_PROTOCOL_OpenPGP);
     gerr_check(gerr, __func__);
+}
+
+context::
+context(const std::string &gpg_homedir) : context{}
+{
+    if(gpg_homedir.empty())
+        return;
+    auto gerr = gpgme_ctx_set_engine_info(_ctx.get(), GPGME_PROTOCOL_OpenPGP,
+            nullptr, gpg_homedir.c_str());
+    gpgh::gerr_check(gerr, __func__);
 }
 
 gpgh::keylist context::

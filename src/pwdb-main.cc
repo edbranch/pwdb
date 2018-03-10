@@ -32,9 +32,9 @@
 #include <cerrno>
 #include <cstdio>
 
-void check_uid(const std::string &uid)
+void check_uid(gpgh::context &ctx, const std::string &uid)
 {
-    auto keys = gpgh::context{}.get_keys(uid, false,
+    auto keys = ctx.get_keys(uid, false,
             [](gpgme_key_t k)->bool {return k->can_encrypt && k->can_sign;});
     if(keys.empty()) {
         std::cerr << "WARNING: No suitable key found for uid " << uid <<
@@ -91,8 +91,10 @@ int main(int argc, const char *argv[])
         }
 
         // Status
-        if(!opts->uid.empty())
-            check_uid(opts->uid);
+        if(!opts->uid.empty()) {
+            gpgh::context ctx{opts->gpg_homedir};
+            check_uid(ctx, opts->uid);
+        }
         std::cerr << (opts->create ? "Creating " : "Using ");
         std::cerr << opts->file << std::endl;
 
@@ -100,7 +102,7 @@ int main(int argc, const char *argv[])
         pwdb::db cdb{};
         if(std::filesystem::exists(opts->file)) {
             if(std::ifstream ifs(opts->file); ifs.good()) {
-                gpgh::context ctx{};
+                gpgh::context ctx{opts->gpg_homedir};
                 cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
                 check_gpg_verify_result(ctx);
             } else {
@@ -118,14 +120,17 @@ int main(int argc, const char *argv[])
             cdb.uid(opts->uid);
             cdb_modified = true;
         }
-        check_uid(cdb.uid());
+        {
+            gpgh::context ctx{opts->gpg_homedir};
+            check_uid(ctx, cdb.uid());
+        }
 
         // Recrypt
         // NOTE: do this anytime requested as new subkeys could have been added
         if(opts->recrypt) {
             std::cout << "Re-encrypting all record data stores" << std::endl;
             cdb_modified = true;
-            gpgh::context ctx{};
+            gpgh::context ctx{opts->gpg_homedir};
             pwdb::db_recrypt_rcd_stores(ctx, cdb);
         }
 
@@ -137,8 +142,8 @@ int main(int argc, const char *argv[])
         // Save database
         if(cdb_modified) {
             std::cout << "Database modified, saving" << std::endl;
-            auto encode = [&cdb](std::ostream& out) {
-                gpgh::context ctx{};
+            auto encode = [&cdb, &opts](std::ostream& out) {
+                gpgh::context ctx{opts->gpg_homedir};
                 ctx.add_signer(cdb.uid());
                 // TODO - additional recipients
                 pwdb::encode_data(ctx, cdb.uid(), cdb.pb(), out, true);

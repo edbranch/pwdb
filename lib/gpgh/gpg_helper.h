@@ -123,7 +123,8 @@ class context
     static bool filt_true(gpgme_key_t) noexcept { return true; }
 
 public:
-    context();
+    context(void);
+    context(const std::string &gpg_homedir);
     auto get(void)->gpgme_ctx_t { return _ctx.get(); }
     auto get_keys(const std::string &recipient, bool secret_only = false,
             std::function<bool(gpgme_key_t)> filter = filt_true)
