@@ -38,7 +38,11 @@ namespace fs = ::std::experimental::filesystem;
 std::string
 xdg_data_dir(void)
 {
-    fs::path data_dir(getenv("XDG_DATA_HOME"));
+    const char *xdg_data_home = getenv("XDG_DATA_HOME");
+    fs::path data_dir;
+    if(xdg_data_home) {
+        data_dir = xdg_data_home;
+    }
     if(data_dir.empty()) {
         data_dir = getenv("HOME");
         data_dir /= ".local/share";
