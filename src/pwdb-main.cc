@@ -149,9 +149,6 @@ int main(int argc, const char *argv[])
     } catch(std::runtime_error &e) {
         std::cerr << e.what() << std::endl;
         return 1;
-    } catch(const std::exception &e) {
-        std::cerr << "ERROR (unknown): " << e.what() << std::endl;
-        return 1;
     }
     std::cout << "Exiting" << std::endl;
     return 0;
