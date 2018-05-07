@@ -118,13 +118,13 @@ int main(int argc, const char *argv[])
             return 1;
         }
 
-    } catch(gpgh::error e) {
+    } catch(gpgh::error &e) {
         std::cerr << "GPG ERROR: " << e.what() << std::endl;
         return 1;
-    } catch(std::system_error e) {
+    } catch(std::system_error &e) {
         std::cerr << "SYSTEM ERROR: " << e.what() << std::endl;
         return 1;
-    } catch(std::exception e) {
+    } catch(std::exception &e) {
         std::cerr << "UNKNOWN ERROR: " << e.what() << std::endl;
         return 1;
     }
