@@ -23,13 +23,13 @@
 #include "pwdb/util.h"
 #include "pwdb/config.h"
 #include <boost/program_options.hpp>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <sstream>
 #include <iostream>
 
 namespace pwdb {
 
-namespace fs = ::std::experimental::filesystem;
+namespace fs = ::std::filesystem;
 namespace po = ::boost::program_options;
 
 static std::optional<po::variables_map>
@@ -98,9 +98,7 @@ cl_handle(int argc, const char *argv[])
             throw std::runtime_error(ss.str());
         }
     } else if(opts.count("create")) {
-        /* FIXME: GCC 7 does not have weakly_canonical()
         data_file = fs::weakly_canonical(data_file);
-        */
         ret->create = true;
         auto dir = data_file.parent_path();
         if(!dir.empty()) {

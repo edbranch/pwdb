@@ -28,7 +28,7 @@
 #include <iostream>
 #include <list>
 #include <system_error>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <cerrno>
 #include <cstdio>
 
@@ -98,7 +98,7 @@ int main(int argc, const char *argv[])
 
         // Read in the database
         pwdb::db cdb{};
-        if(std::experimental::filesystem::exists(opts->file)) {
+        if(std::filesystem::exists(opts->file)) {
             if(std::ifstream ifs(opts->file); ifs.good()) {
                 gpgh::context ctx{};
                 cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);

@@ -20,7 +20,7 @@
 ***/
 
 #include "pwdb/util.h"
-#include <experimental/filesystem>
+#include <filesystem>
 #include <fstream>
 #include <system_error>
 #include <cerrno>
@@ -33,7 +33,7 @@ extern "C" {
 
 namespace pwdb {
 
-namespace fs = ::std::experimental::filesystem;
+namespace fs = ::std::filesystem;
 
 std::string
 xdg_data_dir(void)
