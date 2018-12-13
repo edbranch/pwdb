@@ -68,7 +68,7 @@ clopts_parse(int argc, const char *argv[])
         }
         po::notify(opts);    
     }
-    catch(po::error &e) {
+    catch(const po::error &e) {
         std::stringstream ss;
         ss << e.what() << '\n' << usage();
         throw std::runtime_error(ss.str());
