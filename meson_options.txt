@@ -1,0 +1,6 @@
+option('install_rpath_set', type: 'boolean', value: true,
+  description: 'Set rpath of installed binaries')
+option('install_rpath_exe', type: 'string', value: '$ORIGIN/../lib',
+  description: 'Executable rpath value')
+option('install_rpath_lib', type: 'string', value: '$ORIGIN',
+  description: 'Dynamic library rpath value')

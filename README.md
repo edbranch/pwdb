@@ -7,9 +7,18 @@ user.
 
 ## Building
 
-This project builds with cmake. Ex:
+This project may be built with `cmake`:
 
+    ```
     mkdir build && cd build && cmake /path/to/pwdb && make
+    ```
+
+This project may be built with `meson`:
+
+    ```
+    meson -Dprefix=$PREFIX $SRCDIR $BUILDDIR
+    ninja -C $BUILDDIR
+    ```
 
 ### Dependencies
 
@@ -22,6 +31,8 @@ This project builds with cmake. Ex:
 
 #### Build
 
-* CMake - Build system generation
+* CMake - CMake build system generation
+* meson - meson build system generation
+* make - building with CMake build system
+* ninja - building with meson build system
 * gcc - C++ compilation
-
