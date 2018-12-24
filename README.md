@@ -7,12 +7,6 @@ user.
 
 ## Building
 
-This project may be built with `cmake`:
-
-    ```
-    mkdir build && cd build && cmake /path/to/pwdb && make
-    ```
-
 This project may be built with `meson`:
 
     ```
@@ -31,8 +25,6 @@ This project may be built with `meson`:
 
 #### Build
 
-* CMake - CMake build system generation
-* meson - meson build system generation
-* make - building with CMake build system
-* ninja - building with meson build system
-* gcc - C++ compilation
+* meson - build system generation
+* ninja - build with generated build system
+* gcc >= 8.1 or comperable compiler with full support for C++17
