@@ -59,9 +59,12 @@ void encode_data(gpgh::context &ctx,
         throw std::runtime_error(std::string("Failed to serialize ") +
                 typeid(PB_T).name());
     }
-    ctx.encrypt(ctx.get_keys(recipients, false,
-                [](gpgme_key_t k)->bool{return k->can_encrypt;}),
-            dec_data, dest, sign);
+    auto key_filter = [sign](gpgme_key_t k)->bool {
+        return !k->revoked && !k->expired && k->can_encrypt &&
+            (sign ? k->can_sign : true);
+    };
+    ctx.encrypt(ctx.get_keys(recipients, false, key_filter), dec_data, dest,
+            sign);
 }
 
 template <typename PB_T>
