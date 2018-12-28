@@ -78,6 +78,7 @@ public:
     void run(const std::string &prompt=std::string{}) const;
     void add_history(const std::string &cmdline) const
         { ops_.add_history(cmdline); }
+    auto ops(void)->const cmd_interp::ops& { return ops_; }
     void help(std::ostream &out, const std::string &cmd) const;
     void help(std::ostream &out) const;
 };
