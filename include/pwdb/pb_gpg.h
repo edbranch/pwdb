@@ -39,7 +39,7 @@ auto decode_data(gpgh::context &ctx, std::istream &src)->PB_T
         throw std::runtime_error(std::string("Failed to parse ") +
                 typeid(PB_T).name());
     }
-    return std::move(ret);
+    return ret;
 }
 
 template <typename PB_T>

@@ -58,7 +58,7 @@ readline_ops(void)
                 cmd = lp;
                 free(lp);
             }
-            return std::move(cmd);
+            return cmd;
         }
     };
 }

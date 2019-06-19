@@ -39,7 +39,7 @@ auto json2pb(const std::string &json)->PB_T
     auto stat = google::protobuf::util::JsonStringToMessage(json, &msg, jopts);
     if(!stat.ok())
         throw std::runtime_error(stat.error_message());
-    return std::move(msg);
+    return msg;
 }
 
 template <typename PB_T>
@@ -52,7 +52,7 @@ auto pb2json(const PB_T &msg)->std::string
     auto stat = google::protobuf::util::MessageToJsonString(msg, &json, jopts);
     if(!stat.ok())
         throw std::runtime_error(stat.error_message());
-    return std::move(json);
+    return json;
 }
 
 } // namespace pwdb

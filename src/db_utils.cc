@@ -32,7 +32,7 @@ db_open_rcd_store(gpgh::context &ctx, const db &cdb, pwdb::db::rcd_citer_t i)
     if(!rcd_data.empty()) {
         store = pwdb::decode_data<pb::Store>(ctx, rcd_data);
     }
-    return std::move(store);
+    return store;
 }
 
 void

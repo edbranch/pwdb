@@ -177,7 +177,7 @@ keylist2kvec(const keylist &kl)
     for(const auto &sk: kl)
         rkv.push_back(sk->get());
     rkv.push_back(nullptr);
-    return std::move(rkv);
+    return rkv;
 }
 
 //=============================================================================
@@ -230,7 +230,7 @@ get_keys(const std::string &recipient, bool secret_only,
             keys.push_back(std::make_shared<key>(kt));
     } while (true);
     op_keylist.end();
-    return std::move(keys);
+    return keys;
 }
 
 gpgh::keylist context::
@@ -242,7 +242,7 @@ get_keys(const std::vector<std::string> &recipients, bool secret_only,
         auto ikl = get_keys(r, secret_only, filter);
         kl.insert(kl.end(), ikl.cbegin(), ikl.cend());
     }
-    return std::move(kl);
+    return kl;
 }
 
 void context::

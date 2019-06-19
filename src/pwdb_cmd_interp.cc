@@ -233,7 +233,7 @@ def_interp(const cmd_interp::ops &ops)
         }
     };
 
-    return std::move(d);
+    return d;
 }
 
 pwdb_cmd_interp::
@@ -313,7 +313,7 @@ def_interp(const cmd_interp::ops &ops)
         }
     };
 
-    return std::move(d);
+    return d;
 }
 
 rcd_cmd_interp::

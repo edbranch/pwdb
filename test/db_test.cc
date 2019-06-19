@@ -64,7 +64,7 @@ gen_test_recordv(void)
     *rcd.mutable_data() = "If you can read this you will be RICH!";
     cdb.add("four", rcd);
 
-    return std::move(cdb);
+    return cdb;
 }
 
 int

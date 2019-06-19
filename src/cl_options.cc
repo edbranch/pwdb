@@ -74,7 +74,7 @@ clopts_parse(int argc, const char *argv[])
         throw std::runtime_error(ss.str());
     }
     ret = std::move(opts);
-    return std::move(ret);
+    return ret;
 }
 
 std::optional<cl_options>
@@ -127,7 +127,7 @@ cl_handle(int argc, const char *argv[])
     if(opts.count("recrypt"))
         ret->recrypt = true;
 
-    return std::move(ret);
+    return ret;
 }
 
 
