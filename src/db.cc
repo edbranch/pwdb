@@ -55,7 +55,7 @@ remove(const std::string &name)
         return 0;
     for(auto tag_iter = pb_db.mutable_tags()->begin();
             tag_iter != pb_db.mutable_tags()->end(); ++tag_iter) {
-        detag(name, tag_iter->first);
+        detag(name, tag_iter);
     }
     records().erase(rcd_iter);
     // NOTE: std::remove_if does not work on associative types

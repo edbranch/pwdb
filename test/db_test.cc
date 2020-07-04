@@ -81,6 +81,12 @@ add_remove_test(void)
     ret |= tassert(cdb.size() == 3, "Size on remove");
     ret |= tassert(cdb.count("three") == 0, "Removed accessible");
 
+    // Remove All
+    for(auto size = cdb.size(); size != 0; --size) {
+        ret |= tassert(cdb.remove(cdb.begin()->first), "Pop");
+    }
+    ret |= tassert(cdb.size() == 0, "Pop all");
+
     return ret;
 }
 
