@@ -137,9 +137,9 @@ help(std::ostream &out) const
     out << "Commands:\n";
     auto prefix = "    ";
     size_t cmd_width = 0;
-    for(const auto cdef: interp_)
+    for(const auto &cdef: interp_)
         cmd_width = std::max(cmd_width, cdef.first.size());
-    for(const auto cdef: interp_)
+    for(const auto &cdef: interp_)
         out << prefix << std::setw(cmd_width) << std::left << cdef.first <<
             " - " << cdef.second.help << '\n';
     out << std::flush;
