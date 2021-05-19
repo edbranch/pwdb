@@ -40,7 +40,7 @@ auto json2pb(const std::string &json)->PB_T
     PB_T msg;
     auto stat = google::protobuf::util::JsonStringToMessage(json, &msg, jopts);
     if(!stat.ok())
-        throw std::runtime_error(std::string(stat.error_message()));
+        throw std::runtime_error(std::string(stat.message()));
     return msg;
 }
 
@@ -53,8 +53,7 @@ auto pb2json(const PB_T &msg)->std::string
     std::string json;
     auto stat = google::protobuf::util::MessageToJsonString(msg, &json, jopts);
     if(!stat.ok())
-        throw std::runtime_error(std::string(stat.error_message()));
-        //throw std::runtime_error(stat.error_message());
+        throw std::runtime_error(std::string(stat.message()));
     return json;
 }
 
