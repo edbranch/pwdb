@@ -123,7 +123,8 @@ off_t data_stream_cbs_seek(void *handle, off_t offset, int whence)
             way = std::ios_base::end;
             break;
         default:
-            ; // TODO - return -1, set errno
+            errno = -EINVAL;
+            return -1;
     }
     return sbuf->pubseekoff(offset, way);
 }
