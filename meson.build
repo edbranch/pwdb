@@ -1,5 +1,5 @@
 project('pwdb', 'cpp',
-  version: '0.4.0',
+  version: '0.4.1',
   meson_version: '>=0.49.0',
   license : ['GPL3+', 'LGPL3+'],
   default_options : [

@@ -47,7 +47,7 @@ auto json2pb(const std::string &json)->PB_T
 template <typename PB_T>
 auto pb2json(const PB_T &msg)->std::string
 {
-    google::protobuf::util::JsonOptions jopts;
+    google::protobuf::util::JsonPrintOptions jopts;
     jopts.preserve_proto_field_names = true;
     jopts.add_whitespace = true;
     std::string json;

@@ -3,7 +3,7 @@ cc = meson.get_compiler('cpp')
 stdfs_dep = cc.find_library('stdc++fs', required: cc.get_id() == 'gcc')
 curses_dep = cc.find_library('curses')
 boost_po_dep = dependency('boost', modules: ['program_options', 'system'])
-protobuf_dep = cc.find_library('protobuf')
+protobuf_dep = dependency('protobuf')
 # NOTE: protobuf files compile ok but are horribly broken without thread
 #   support enabled!
 thread_dep = dependency('threads')
