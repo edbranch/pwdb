@@ -39,7 +39,7 @@ static sem_up_t
 gen_test_key_lock(void)
 {
     const std::string sem_name =
-        "pwdb_gen_test_key-"s + std::to_string(geteuid());
+        "/pwdb_gen_test_key-"s + std::to_string(geteuid());
     auto sem_p = sem_open(sem_name.c_str(), O_CREAT, S_IRUSR | S_IWUSR, 1);
     if(SEM_FAILED == sem_p)
         throw std::system_error(errno, std::generic_category(),
