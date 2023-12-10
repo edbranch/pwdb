@@ -32,15 +32,25 @@ void gerr_check(gpgme_error_t gerr, const char *pstr)
 {
     if(gpgme_err_code(gerr) != GPG_ERR_NO_ERROR) {
         if(pstr)
-            std::cerr << "GPGH ERROR: " << pstr << '\n';
+            std::cerr << "GPGH ERROR: " << pstr << std::endl;
         throw gpgh::error(gpgme_strerror(gerr));
     }
+}
+
+bool gerr_show(gpgme_error_t gerr, const char *pstr)
+{
+    bool success = gpgme_err_code(gerr) == GPG_ERR_NO_ERROR;
+    if(!success) {
+        if(pstr)
+            std::cerr << "GPGH ERROR: " << pstr << std::endl;
+        std::cerr << gpgme_strerror(gerr) << std::endl;
+    }
+    return success;
 }
 
 // RAII / Exception safety for gpgme keylist operation
 class gpgme_op_keylist
 {
-    bool pending{true};
     gpgme_context *ctx_;
 public:
     gpgme_op_keylist(void) = delete;
@@ -54,21 +64,8 @@ public:
     gpgme_op_keylist &operator=(const gpgme_op_keylist&) = delete;
     ~gpgme_op_keylist()
     {
-        // NOTE: this destructor should only ever be called when an exception
-        // is pending, so do not check result of attempted cleanup.
-        if(pending) {
-            gpgme_op_keylist_end(ctx_);
-        }
-    }
-    // NOTE: end() should be called in all non-exception code paths to allow
-    // proper error handling of the operation.
-    void end(void)
-    {
-        if(pending) {
-            pending = false;
-            auto gerr = gpgme_op_keylist_end(ctx_);
-            gerr_check(gerr, __func__);
-        }
+        auto gerr = gpgme_op_keylist_end(ctx_);
+        gerr_show(gerr, __func__);
     }
 };
 
@@ -230,7 +227,6 @@ get_keys(const std::string &recipient, bool secret_only,
         if(filter(kt))
             keys.push_back(std::make_shared<key>(kt));
     } while (true);
-    op_keylist.end();
     return keys;
 }
 

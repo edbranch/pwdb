@@ -104,6 +104,10 @@ inline std::istream &operator>>(std::istream &in, const odata &d)
 // check and throw on gpgme_error_t
 void gerr_check(gpgme_error_t gerr, const char *pstr = nullptr);
 
+// check and print gpgme_error_t, but take no action. Use this in destructors.
+// Returns true iff GPG_ERR_NO_ERROR
+bool gerr_show(gpgme_error_t gerr, const char *pstr = nullptr);
+
 // print basic key info - for full info use operator <<(ostream, Key)
 void print_key(std::ostream &out, gpgh::key &k,
         const std::string prefix = "");
