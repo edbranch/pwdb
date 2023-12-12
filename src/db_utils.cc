@@ -28,9 +28,11 @@ pwdb::pb::Store
 db_open_rcd_store(gpgh::context &ctx, const db &cdb, pwdb::db::rcd_citer_t i)
 {
     pb::Store store;
-    auto &rcd_data = i->second.data();
-    if(!rcd_data.empty()) {
-        store = pwdb::decode_data<pb::Store>(ctx, rcd_data);
+    auto &rcd = i->second;
+    if(rcd.has_store()) {
+        store = rcd.store();
+    } else if(!rcd.data().empty()) {
+        store = pwdb::decode_data<pb::Store>(ctx, rcd.data());
     }
     return store;
 }
@@ -47,6 +49,13 @@ void db_recrypt_rcd_stores(gpgh::context &ctx, db &cdb)
 {
     for(auto i=cdb.begin(); i != cdb.end(); ++i) {
         db_save_rcd_store(ctx, cdb, i->first, db_open_rcd_store(ctx, cdb, i));
+    }
+}
+
+void db_decrypt_all_rcd_stores(gpgh::context &ctx, db &cdb)
+{
+    for(auto i=cdb.begin(); i != cdb.end(); ++i) {
+        cdb.set_store(i->first, db_open_rcd_store(ctx, cdb, i));
     }
 }
 

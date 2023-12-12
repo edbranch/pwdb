@@ -42,6 +42,8 @@ public:
 private:
     pb::DB pb_db;
 
+    db(const db &) = default;
+
     auto &records(void) { return *pb_db.mutable_records(); }
     const auto &crecords(void) const { return pb_db.records(); }
     bool detag(const std::string &name,
@@ -52,12 +54,15 @@ public:
     db(pb::DB &&p) : pb_db(p) { ; }
     db(std::istream &in) { pb_db.ParseFromIstream(&in); }
     db(std::istream &&in) : db{in} {}
-    db(const db &) = delete;
     db(db &&) = default;
     db &operator=(const db &) = delete;
     db &operator=(db &&) = default;
     db &operator=(pb::DB &&p) { pb_db = std::move(p); return *this; }
 
+    auto copy(void) const->db
+        { return db(*this); }
+    auto get_db(void) const->const pb::DB &
+        { return pb_db; }
     auto uid(void) const->std::string
         { return pb_db.uid(); }
     void uid(const std::string &id)
@@ -79,6 +84,14 @@ public:
     }
     void set_data(const std::string &name, std::string &&data) {
         pb_db.mutable_records()->at(name).set_data(std::move(data));
+    }
+    auto get_store(const std::string &name) const->const pwdb::pb::Store&
+        { return pb_db.records().at(name).store(); }
+    void set_store(const std::string &name, const pwdb::pb::Store &store) {
+        *(pb_db.mutable_records()->at(name).mutable_store()) = store;
+    }
+    void set_store(const std::string &name, pwdb::pb::Store &&store) {
+        *(pb_db.mutable_records()->at(name).mutable_store()) = std::move(store);
     }
     bool entag(const std::string &name, const std::string &tag);
     bool detag(const std::string &name, const std::string &tag);

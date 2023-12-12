@@ -32,6 +32,7 @@ auto db_open_rcd_store(gpgh::context &ctx, const db &cdb,
 void db_save_rcd_store(gpgh::context &ctx, db &cdb, const std::string &name,
         const pwdb::pb::Store &pb_store);
 void db_recrypt_rcd_stores(gpgh::context &ctx, db &cdb);
+void db_decrypt_all_rcd_stores(gpgh::context &ctx, db &cdb);
 
 } // namespace pwdb
 #endif // pwdb_db_utils_h_included

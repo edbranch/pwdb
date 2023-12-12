@@ -35,6 +35,8 @@ struct cl_options
     std::string uid;
     std::string record;
     std::string gpg_homedir;
+    std::string export_file;
+    std::string import_file;
 };
 
 std::optional<cl_options> cl_handle(int argc, const char *argv[]);

@@ -48,6 +48,8 @@ clopts_parse(int argc, const char *argv[])
         // ("record", po::value<std::string>(), "Record to open") // TODO
         ("gpg-homedir", po::value<std::string>(), "GnuPG home directory")
         ("recrypt", "Re-encrypt all record data stores")
+        ("import,i", po::value<std::string>(), "JSON file to import")
+        ("export,e", po::value<std::string>(), "JSON file to export")
     ;
     auto usage = [&opts_desc](void)->std::string {
         std::stringstream ss;
@@ -126,6 +128,14 @@ cl_handle(int argc, const char *argv[])
     // Recrypt
     if(opts.count("recrypt"))
         ret->recrypt = true;
+
+    // Import file
+    if(opts.count("import"))
+        ret->import_file = opts["import"].as<std::string>();
+
+    // Export file
+    if(opts.count("export"))
+        ret->export_file = opts["export"].as<std::string>();
 
     return ret;
 }

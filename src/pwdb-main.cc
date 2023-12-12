@@ -24,6 +24,7 @@
 #include "pwdb/db_utils.h"
 #include "pwdb/util.h"
 #include "pwdb/pb_gpg.h"
+#include "pwdb/pb_json.h"
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -89,22 +90,35 @@ int main(int argc, const char *argv[])
         if(!opts) {
             return 0;
         }
+        bool do_recrypt = opts->recrypt;
 
         // Status
         if(!opts->uid.empty()) {
             gpgh::context ctx{opts->gpg_homedir};
             check_uid(ctx, opts->uid);
         }
+
         std::cerr << (opts->create ? "Creating " : "Using ");
         std::cerr << opts->file << std::endl;
-
-        // Read in the database
         pwdb::db cdb{};
-        if(std::filesystem::exists(opts->file)) {
-            if(std::ifstream ifs(opts->file); ifs.good()) {
+        if(opts->import_file.empty()) {
+            // Read in the database
+            if(std::filesystem::exists(opts->file)) {
+                if(std::ifstream ifs(opts->file); ifs.good()) {
+                    gpgh::context ctx{opts->gpg_homedir};
+                    cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
+                    check_gpg_verify_result(ctx);
+                } else {
+                    throw std::system_error(errno, std::generic_category());
+                }
+            }
+        } else {
+            if(std::ifstream ifs(opts->import_file); ifs.good()) {
+                std::cerr << "Importing " << opts->import_file << std::endl;
                 gpgh::context ctx{opts->gpg_homedir};
-                cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
+                cdb = pwdb::json2pb<pwdb::pb::DB>(ctx.decrypt(ifs));
                 check_gpg_verify_result(ctx);
+                do_recrypt = true;
             } else {
                 throw std::system_error(errno, std::generic_category());
             }
@@ -113,7 +127,7 @@ int main(int argc, const char *argv[])
         // Set signing and primary encryption uid
         bool cdb_modified = false;
         if(!opts->uid.empty() && opts->uid != cdb.uid()) {
-            if(!cdb.uid().empty() && !opts->recrypt) {
+            if(!cdb.uid().empty() && !do_recrypt) {
                 std::cerr << "WARNING: uid has changed, recommend running with"
                    " --recrypt\n";
             }
@@ -127,11 +141,32 @@ int main(int argc, const char *argv[])
 
         // Recrypt
         // NOTE: do this anytime requested as new subkeys could have been added
-        if(opts->recrypt) {
+        if(do_recrypt) {
             std::cout << "Re-encrypting all record data stores" << std::endl;
             cdb_modified = true;
             gpgh::context ctx{opts->gpg_homedir};
             pwdb::db_recrypt_rcd_stores(ctx, cdb);
+        }
+
+        // Export
+        // FIXME: if both --recrypt and --export-file are given, re-encrypted
+        // database will not be saved, only exported.
+        if(!opts->export_file.empty()) {
+            std::cerr << "Exporting " << opts->export_file << std::endl;
+            if(std::ofstream ofs(opts->export_file); ofs.good()) {
+                pwdb::db expdb{cdb.copy()};
+                gpgh::context ctx{opts->gpg_homedir};
+                ctx.add_signer(expdb.uid());
+                db_decrypt_all_rcd_stores(ctx, expdb);
+                auto json = pwdb::pb2json(expdb.get_db());
+                auto keyfilt = [](gpgme_key_t k)->bool {
+                    return !k->revoked && !k->expired && k->can_encrypt &&
+                        k->can_sign;
+                };
+                auto keys = ctx.get_keys(expdb.uid(), false, keyfilt);
+                ctx.encrypt(keys, json, ofs, true);
+                return 0;
+            }
         }
 
         // Run command interpreter
