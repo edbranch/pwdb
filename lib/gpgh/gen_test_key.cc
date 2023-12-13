@@ -85,9 +85,9 @@ gen_test_key(gpgh::context &context, const std::string &recipient)
         }
     }
     // print the testing key
-    for(auto k: keys) {
+    for(const auto &k: keys) {
         std::cout << "Recipient:\n";
-        gpgh::print_key(std::cout, *k, "\t");
+        gpgh::print_key(std::cout, k, "\t");
     }
 
     return keys;

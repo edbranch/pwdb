@@ -154,12 +154,37 @@ data_stream(void)
 }
 
 //=============================================================================
+// sig_verify_result
+//=============================================================================
+sig_verify_result::
+sig_verify_result(const gpgme_signature_t sig) :
+    summary(sig->summary),
+    status(sig->status),
+    timestamp(sig->timestamp),
+    exp_timestamp(sig->exp_timestamp),
+    wrong_key_usage(sig->wrong_key_usage),
+    pka_trust(sig->pka_trust),
+    chain_model(sig->chain_model),
+    validity(sig->validity),
+    validity_reason(sig->validity_reason)
+{
+    if(sig->fpr != nullptr)
+        fpr = sig->fpr;
+    if(sig->pka_address != nullptr)
+        pka_address = sig->pka_address;
+    if(sig->key != nullptr) {
+        gpgme_key_ref(sig->key);
+        key = gpgh::key(sig->key);
+    }
+}
+
+//=============================================================================
 // Utility functions
 //=============================================================================
 
 // print basic key info - for full info use operator <<(ostream, Key)
 void
-print_key(std::ostream &out, key &k, const std::string prefix)
+print_key(std::ostream &out, const gpgh::key &k, const std::string prefix)
 {
     out << prefix << "fpr:\t" << k->fpr << '\n';
     out << prefix << "id:\t" << k->uids->uid << '\n';
@@ -172,8 +197,8 @@ keylist2kvec(const keylist &kl)
 {
     std::vector<gpgme_key_t> rkv;
     rkv.reserve(kl.size() + 1);
-    for(const auto &sk: kl)
-        rkv.push_back(sk->get());
+    for(const auto &k: kl)
+        rkv.push_back(k.get());
     rkv.push_back(nullptr);
     return rkv;
 }
@@ -225,7 +250,7 @@ get_keys(const std::string &recipient, bool secret_only,
                 gerr_check(gerr, __func__);
         }
         if(filter(kt))
-            keys.push_back(std::make_shared<key>(kt));
+            keys.emplace_back(kt);
     } while (true);
     return keys;
 }
@@ -237,7 +262,8 @@ get_keys(const std::vector<std::string> &recipients, bool secret_only,
     gpgh::keylist kl;
     for(const auto &r: recipients) {
         auto ikl = get_keys(r, secret_only, filter);
-        kl.insert(kl.end(), ikl.cbegin(), ikl.cend());
+        kl.insert(kl.end(), std::make_move_iterator(ikl.begin()),
+                std::make_move_iterator(ikl.end()));
     }
     return kl;
 }
@@ -252,8 +278,35 @@ add_signer(const std::string &uid)
         throw std::runtime_error("gpg uid "s + uid + " not found"s);
     if(kl.size() > 1)
         throw std::runtime_error("gpg uid "s + uid + " is not unique"s);
-    auto gerr = gpgme_signers_add(_ctx.get(), kl[0]->get());
+    auto gerr = gpgme_signers_add(_ctx.get(), kl[0].get());
     gerr_check(gerr, __func__);
+}
+
+void context::
+op_verify_result(std::function<void(const gpgme_signature_t&)> fn)
+{
+    for(auto sig = gpgme_op_verify_result(_ctx.get())->signatures; sig != NULL;
+            sig = sig->next) {
+        fn(sig);
+    }
+}
+
+std::list<sig_verify_result> context::
+op_verify_result(void)
+{
+    std::list<sig_verify_result> sig_list;
+    op_verify_result([&sig_list](gpgme_signature_t sig)->void {
+            sig_list.emplace_back(sig); });
+    // The key is often NULL even though it is available, so try to look it
+    // up using the fingerprint.
+    for(auto &sig: sig_list) {
+        if(sig.key == nullptr && !sig.fpr.empty()) {
+            auto keys = this->get_keys(sig.fpr, false);
+            if(!keys.empty())
+                sig.key = std::move(keys.front());
+        }
+    }
+    return sig_list;
 }
 
 std::string context::

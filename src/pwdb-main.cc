@@ -31,7 +31,6 @@
 #include <system_error>
 #include <filesystem>
 #include <cerrno>
-#include <cstdio>
 
 void check_uid(gpgh::context &ctx, const std::string &uid)
 {
@@ -46,39 +45,21 @@ void check_uid(gpgh::context &ctx, const std::string &uid)
 
 void check_gpg_verify_result(gpgh::context &ctx)
 {
-    using key_stat_t = std::tuple<bool, std::string, std::string>;
-    std::list<key_stat_t> key_stats;
-    for(auto sig = gpgme_op_verify_result(ctx.get())->signatures; sig != NULL;
-            sig = sig->next)
-    {
-        key_stats.emplace_back(false, std::string{}, std::string{});
-        auto &kstat = key_stats.back();
-        if(sig->key) {
-            std::get<0>(kstat) = true;
-            std::get<1>(kstat) = sig->key->uids->uid;
-        } else {
-            std::get<1>(kstat) = sig->fpr;
-        }
+    auto siglist = ctx.op_verify_result();
+    for(const auto &sig: siglist) {
+        std::string uid("<unknown>");
+        if(sig.key != nullptr)
+            uid = sig.key->uids->uid;
 
-        if(sig->summary & GPGME_SIGSUM_VALID)
-            std::get<2>(kstat) = "Signature %s good\n";
-        else if(sig->summary & GPGME_SIGSUM_GREEN)
-            std::get<2>(kstat) = "Signature %s ok\n";
-        else if(sig->summary & GPGME_SIGSUM_RED)
-            std::get<2>(kstat) = "WARNING: Signature %s invalid\n";
+        if(sig.summary & GPGME_SIGSUM_VALID)
+            std::cout << "Signature " << uid << " good" << std::endl;
+        else if(sig.summary & GPGME_SIGSUM_GREEN)
+            std::cout << "Signature " << uid << " ok" << std::endl;
+        else if(sig.summary & GPGME_SIGSUM_RED)
+            std::cout << "WARNING: Signature " << uid << " invalid" << std::endl;
         else
-            std::get<2>(kstat) =
-                "WARNING: Signature %s could not be verified\n";
-        break;
-    }
-    for(const auto &kstat: key_stats) {
-        std::string uid{std::get<1>(kstat)};
-        if(!std::get<0>(kstat)) {
-            auto keys = ctx.get_keys(uid, false);
-            if(!keys.empty())
-                uid = keys.front()->get()->uids->uid;
-        }
-        std::printf(std::get<2>(kstat).c_str(), uid.c_str());
+            std::cout << "WARNING: Signature " << uid <<
+                " could not be verified" << std::endl;
     }
 }
 
