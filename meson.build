@@ -3,7 +3,7 @@ project('pwdb', 'cpp',
   meson_version: '>=0.49.0',
   license : ['GPL3+', 'LGPL3+'],
   default_options : [
-    'cpp_std=c++17',
+    'cpp_std=c++23',
     'warning_level=1',
     'buildtype=debugoptimized'
 ])

@@ -27,6 +27,7 @@
 #include "pwdb/pb_json.h"
 #include <fstream>
 #include <iostream>
+#include <format>
 #include <list>
 #include <system_error>
 #include <filesystem>
@@ -37,9 +38,9 @@ void check_uid(gpgh::context &ctx, const std::string &uid)
     auto keys = ctx.get_keys(uid, false,
             [](gpgme_key_t k)->bool {return k->can_encrypt && k->can_sign;});
     if(keys.empty()) {
-        std::cerr << "WARNING: No suitable key found for uid " << uid <<
-            std::endl;
-        std::cerr << "\tChanges will NOT be saved!" << std::endl;
+        std::cerr << std::format("WARNING: No suitable key found for uid {}\n",
+                uid);
+        std::cerr << "\tChanges will NOT be saved!\n";
     }
 }
 
@@ -52,14 +53,15 @@ void check_gpg_verify_result(gpgh::context &ctx)
             uid = sig.key->uids->uid;
 
         if(sig.summary & GPGME_SIGSUM_VALID)
-            std::cout << "Signature " << uid << " good" << std::endl;
+            std::cout << std::format("Signature {} good\n", uid);
         else if(sig.summary & GPGME_SIGSUM_GREEN)
-            std::cout << "Signature " << uid << " ok" << std::endl;
+            std::cout << std::format("Signature {} ok\n", uid);
         else if(sig.summary & GPGME_SIGSUM_RED)
-            std::cout << "WARNING: Signature " << uid << " invalid" << std::endl;
+            std::cout << std::format("WARNING: Signature {} invalid\n", uid);
         else
-            std::cout << "WARNING: Signature " << uid <<
-                " could not be verified" << std::endl;
+            std::cout << std::format("WARNING: Signature {} could not be "
+                    "verified\n", uid);
+        std::cout << std::flush;
     }
 }
 
@@ -79,8 +81,8 @@ int main(int argc, const char *argv[])
             check_uid(ctx, opts->uid);
         }
 
-        std::cerr << (opts->create ? "Creating " : "Using ");
-        std::cerr << opts->file << std::endl;
+        std::cerr << std::format("{} {}\n", opts->create ? "Creating" : "Using",
+                opts->file);
         pwdb::db cdb{};
         if(opts->import_file.empty()) {
             // Read in the database
@@ -95,7 +97,7 @@ int main(int argc, const char *argv[])
             }
         } else {
             if(std::ifstream ifs(opts->import_file); ifs.good()) {
-                std::cerr << "Importing " << opts->import_file << std::endl;
+                std::cerr << std::format("Importing {}\n", opts->import_file);
                 gpgh::context ctx{opts->gpg_homedir};
                 cdb = pwdb::json2pb<pwdb::pb::DB>(ctx.decrypt(ifs));
                 check_gpg_verify_result(ctx);
@@ -133,7 +135,7 @@ int main(int argc, const char *argv[])
         // FIXME: if both --recrypt and --export-file are given, re-encrypted
         // database will not be saved, only exported.
         if(!opts->export_file.empty()) {
-            std::cerr << "Exporting " << opts->export_file << std::endl;
+            std::cerr << std::format("Exporting {}\n", opts->export_file);
             if(std::ofstream ofs(opts->export_file); ofs.good()) {
                 pwdb::db expdb{cdb.copy()};
                 gpgh::context ctx{opts->gpg_homedir};

@@ -27,4 +27,4 @@ This project may be built with `meson`:
 
 * meson - build system generation
 * ninja - build with generated build system
-* gcc >= 8.1 or comperable compiler with full support for C++17
+* gcc >= 13.1 or comperable compiler with support for C++23

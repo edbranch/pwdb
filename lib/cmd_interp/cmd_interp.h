@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <optional>
 #include <bitset>
+#include <ranges>
 
 namespace cmd_interp {
 
@@ -87,17 +88,20 @@ public:
 // Utilities
 //-----------------------------------------------------------------------------
 auto split_args(const std::string &cmdline)->std::vector<std::string>;
-template<typename inputIter>
-auto assemble(const inputIter begin, const inputIter end)->std::string {
+template<typename R>
+auto assemble(const R &in)->std::string {
     std::stringstream cmdline;
-    for(auto i = begin; i != end; ++i) {
-        if(i != begin)
-            cmdline << " ";
-        cmdline << *i;
+    for(const auto &i: in | std::views::join_with(' ')) {
+        cmdline << i;
     }
     return cmdline.str();
+    // With full C++23 this should just be:
+    //return in | std::views::join_with(' ') | std::ranges::to<std::string>();
 }
-auto assemble(const std::vector<std::string> &args)->std::string;
+template<typename inputIter>
+auto assemble(const inputIter begin, const inputIter end)->std::string {
+    return assemble(std::ranges::subrange(begin, end));
+}
 
 template<typename InputIterator>
 void print_columns(std::ostream &out, InputIterator first, InputIterator last,

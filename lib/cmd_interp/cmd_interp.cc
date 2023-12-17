@@ -36,12 +36,6 @@ split_args(const std::string &cmdline)
     return boost::program_options::split_unix(cmdline);
 }
 
-std::string
-assemble(const std::vector<std::string> &args)
-{
-    return assemble(args.begin(), args.end());
-}
-
 //----------------------------------------------------------------------------
 // GNU Readline support
 //----------------------------------------------------------------------------

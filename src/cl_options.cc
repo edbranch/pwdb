@@ -26,6 +26,7 @@
 #include <filesystem>
 #include <sstream>
 #include <iostream>
+#include <format>
 
 namespace pwdb {
 
@@ -71,9 +72,7 @@ clopts_parse(int argc, const char *argv[])
         po::notify(opts);    
     }
     catch(const po::error &e) {
-        std::stringstream ss;
-        ss << e.what() << '\n' << usage();
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error(std::format("{}\n{}", e.what(), usage()));
     }
     ret = std::move(opts);
     return ret;
@@ -95,9 +94,8 @@ cl_handle(int argc, const char *argv[])
     if(fs::exists(data_file)) {
         data_file = fs::canonical(data_file);
         if(!fs::is_regular_file(data_file)) {
-            std::stringstream ss;
-            ss << data_file << " is not a file";
-            throw std::runtime_error(ss.str());
+            throw std::runtime_error(std::format("{} is not a file",
+                        data_file.string()));
         }
     } else if(opts.count("create")) {
         data_file = fs::weakly_canonical(data_file);
@@ -107,9 +105,8 @@ cl_handle(int argc, const char *argv[])
             fs::create_directories(dir);
         }
     } else {
-        std::stringstream ss;
-        ss << data_file << " does not exist";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error(std::format("{} does not exist",
+                    data_file.string()));
     }
     ret->file = data_file.string();
 
