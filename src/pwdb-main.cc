@@ -33,6 +33,10 @@
 #include <filesystem>
 #include <cerrno>
 
+extern "C" {
+#include <fcntl.h>
+}
+
 void check_uid(gpgh::context &ctx, const std::string &uid)
 {
     auto keys = ctx.get_keys(uid, false,
@@ -81,13 +85,49 @@ int main(int argc, const char *argv[])
             check_uid(ctx, opts->uid);
         }
 
+        // Canonicalize path (in main because we need it later)
+        auto db_file = std::filesystem::weakly_canonical(opts->file);
+        // Create parent directories
+        std::filesystem::create_directories(db_file.parent_path());
+        // The tmp file **is** the lock. The flock() and fcntl() locking
+        // mechanisms are inherently racey WRT the write-to-temp-move semantics
+        // of a modified database. We can use exclusive creation of the emp
+        // file to close this race window.
+        std::filesystem::path tmp_file{db_file.string() + ".tmp"};
+        int fd = ::open(tmp_file.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRWXU);
+        if(errno == EEXIST)
+            throw std::runtime_error(std::format("File in use: {}",
+                        tmp_file.string()));
+        else if(fd < 0) {
+            throw std::system_error(errno, std::generic_category());
+        }
+        else
+            ::close(fd);
+        // If we get here, it is guaranteed that this process created the
+        // tmp_file.
+        // Abuse unique_ptr as a scope guard to remove tmp_file in any execution
+        // path except when it's explicitly released.
+        auto tf_sg = std::unique_ptr<int, std::function<void(int*)>> (&fd,
+                [&tmp_file](int*){ std::filesystem::remove(tmp_file); });
+
+        // Check opts->create vs db_file existence
+        bool db_file_exists = std::filesystem::exists(db_file);
+        if(opts->create && db_file_exists) {
+            throw std::runtime_error(std::format("File exists: {}",
+                        db_file.string()));
+        } else if(!opts->create && !db_file_exists) {
+            throw std::runtime_error(std::format("File does not exist: {}",
+                        db_file.string()));
+        }
         std::cerr << std::format("{} {}\n", opts->create ? "Creating" : "Using",
-                opts->file);
+                db_file.string());
+
+        // Create and initialize the database
         pwdb::db cdb{};
         if(opts->import_file.empty()) {
             // Read in the database
-            if(std::filesystem::exists(opts->file)) {
-                if(std::ifstream ifs(opts->file); ifs.good()) {
+            if(std::filesystem::exists(db_file)) {
+                if(std::ifstream ifs(db_file); ifs.good()) {
                     gpgh::context ctx{opts->gpg_homedir};
                     cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
                     check_gpg_verify_result(ctx);
@@ -166,7 +206,8 @@ int main(int argc, const char *argv[])
                 // TODO - additional recipients
                 pwdb::encode_data(ctx, cdb.uid(), cdb.pb(), out, true);
             };
-            pwdb::overwrite_file(opts->file, encode);
+            pwdb::overwrite_file(db_file, tmp_file, encode);
+            tf_sg.release();
         }
 
     } catch(const std::runtime_error &e) {

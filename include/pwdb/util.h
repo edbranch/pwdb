@@ -29,7 +29,7 @@
 namespace pwdb {
 
 auto xdg_data_dir(void)->std::string;
-void overwrite_file(const std::string &path,
+void overwrite_file(const std::string &db_file, const std::string &tmp_file,
         std::function<void(std::ostream&)> writer);
 
 class term_mode

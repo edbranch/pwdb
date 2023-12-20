@@ -51,17 +51,16 @@ xdg_data_dir(void)
 }
 
 void
-overwrite_file(const std::string &path,
+overwrite_file(const std::string &db_file, const std::string &tmp_file,
         std::function<void(std::ostream&)> writer)
 {
-    fs::path tmpfile{path + ".tmp"};
-    std::ofstream out(tmpfile.string(),
+    std::ofstream out(tmp_file,
             std::ios::binary | std::ios::trunc | std::ios::out);
     if(!out) {
         throw std::system_error(errno, std::generic_category());
     }
     writer(out);
-    fs::rename(tmpfile, path);
+    fs::rename(tmp_file, db_file);
 }
 
 //----------------------------------------------------------------------------

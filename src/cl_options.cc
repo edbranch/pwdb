@@ -89,26 +89,8 @@ cl_handle(int argc, const char *argv[])
     const auto &opts = *optopts;
 
     // Data file location and directory creation
-    fs::path data_file(opts["file"].as<std::string>());
-    ret->create = false;
-    if(fs::exists(data_file)) {
-        data_file = fs::canonical(data_file);
-        if(!fs::is_regular_file(data_file)) {
-            throw std::runtime_error(std::format("{} is not a file",
-                        data_file.string()));
-        }
-    } else if(opts.count("create")) {
-        data_file = fs::weakly_canonical(data_file);
-        ret->create = true;
-        auto dir = data_file.parent_path();
-        if(!dir.empty()) {
-            fs::create_directories(dir);
-        }
-    } else {
-        throw std::runtime_error(std::format("{} does not exist",
-                    data_file.string()));
-    }
-    ret->file = data_file.string();
+    ret->file = opts["file"].as<std::string>();
+    ret->create = opts.count("create");
 
     // GnuPG sign/encrypt uid
     if(opts.count("uid"))
