@@ -74,15 +74,29 @@ lock_overwrite_file(const std::filesystem::path &file) :
         }
     } else {
         ::close(fd);
-        need_unlock_ = true;
     }
+}
+
+lock_overwrite_file::
+lock_overwrite_file(lock_overwrite_file &&other) noexcept
+{
+    swap(*this, other);
+}
+
+lock_overwrite_file &lock_overwrite_file::
+operator=(lock_overwrite_file &&other) noexcept
+{
+    lock_overwrite_file tmp{std::move(other)};
+    swap(*this, tmp);
+    return *this;
 }
 
 lock_overwrite_file::
 ~lock_overwrite_file()
 {
-    if(need_unlock_) {
-        fs::remove(tmp_file_);
+    if(!tmp_file_.empty()) {
+        std::error_code ec; // remove can throw unless we pass ec
+        fs::remove(tmp_file_, ec);
     }
 }
 
@@ -95,7 +109,14 @@ overwrite(std::function<void(std::ostream&)> writer)
     writer(out);
     out.close();
     fs::rename(tmp_file_, file_);
-    need_unlock_ = false;
+    tmp_file_.clear();
+}
+
+void swap(lock_overwrite_file &lhs, lock_overwrite_file &rhs) noexcept
+{
+    using std::swap;
+    swap(lhs.file_, rhs.file_);
+    swap(lhs.tmp_file_, rhs.tmp_file_);
 }
 
 //----------------------------------------------------------------------------

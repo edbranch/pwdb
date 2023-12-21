@@ -45,18 +45,22 @@ class lock_overwrite_file
 {
     std::filesystem::path file_;
     std::filesystem::path tmp_file_;
-    bool need_unlock_ = false;
 public:
+
+    lock_overwrite_file(void) = default;
     lock_overwrite_file(const std::filesystem::path &file);
     lock_overwrite_file(const lock_overwrite_file&) = delete;
-    lock_overwrite_file(lock_overwrite_file&&) = default;
+    lock_overwrite_file(lock_overwrite_file &&other) noexcept;
     lock_overwrite_file &operator=(const lock_overwrite_file&) = delete;
-    lock_overwrite_file &operator=(lock_overwrite_file&&) = default;
+    lock_overwrite_file &operator=(lock_overwrite_file &&other) noexcept;
     ~lock_overwrite_file();
 
-    auto file(void) const-> const std::filesystem::path& {return file_;}
-    auto tmp_file(void) const-> const std::filesystem::path& {return tmp_file_;}
+    auto file(void) const noexcept -> const std::filesystem::path&
+        { return file_; }
+    auto tmp_file(void) const noexcept -> const std::filesystem::path&
+        { return tmp_file_; }
     void overwrite(std::function<void(std::ostream&)> writer);
+    friend void swap(lock_overwrite_file&, lock_overwrite_file&) noexcept;
 };
 
 //----------------------------------------------------------------------------
