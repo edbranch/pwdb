@@ -27,12 +27,15 @@
 #include <cstring>
 
 extern "C" {
+#include <unistd.h>
+#include <fcntl.h>
 #include <curses.h>
 #include <term.h>
 }
 
 namespace pwdb {
 
+using namespace std::literals::string_literals;
 namespace fs = ::std::filesystem;
 
 std::string
@@ -50,17 +53,49 @@ xdg_data_dir(void)
     return data_dir.string();
 }
 
-void
-overwrite_file(const std::string &db_file, const std::string &tmp_file,
-        std::function<void(std::ostream&)> writer)
+
+//----------------------------------------------------------------------------
+// lock_overwrite_file
+//----------------------------------------------------------------------------
+
+lock_overwrite_file::
+lock_overwrite_file(const std::filesystem::path &file) :
+    file_{fs::weakly_canonical(file)},
+    tmp_file_{fs::path{file_.string() + ".tmp"}}
 {
-    std::ofstream out(tmp_file,
-            std::ios::binary | std::ios::trunc | std::ios::out);
-    if(!out) {
-        throw std::system_error(errno, std::generic_category());
+    std::filesystem::create_directories(file_.parent_path());
+    int fd = ::open(tmp_file_.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRWXU);
+    if(fd < 0) {
+        if(errno == EEXIST) {
+            throw std::runtime_error("File in use: "s + tmp_file_.string());
+        } else {
+            throw std::system_error(errno, std::generic_category(),
+                    "Creating: "s + tmp_file_.string());
+        }
+    } else {
+        ::close(fd);
+        need_unlock_ = true;
     }
+}
+
+lock_overwrite_file::
+~lock_overwrite_file()
+{
+    if(need_unlock_) {
+        fs::remove(tmp_file_);
+    }
+}
+
+void lock_overwrite_file::
+overwrite(std::function<void(std::ostream&)> writer)
+{
+    std::ofstream out(tmp_file_,
+            std::ios::binary | std::ios::trunc | std::ios::out);
+    out.exceptions(std::ios::badbit | std::ios::failbit);
     writer(out);
-    fs::rename(tmp_file, db_file);
+    out.close();
+    fs::rename(tmp_file_, file_);
+    need_unlock_ = false;
 }
 
 //----------------------------------------------------------------------------

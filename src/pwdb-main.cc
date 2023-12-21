@@ -28,22 +28,18 @@
 #include <fstream>
 #include <iostream>
 #include <format>
-#include <list>
 #include <system_error>
 #include <filesystem>
-#include <cerrno>
 
-extern "C" {
-#include <fcntl.h>
-}
+using namespace std::literals::string_literals;
 
 void check_uid(gpgh::context &ctx, const std::string &uid)
 {
     auto keys = ctx.get_keys(uid, false,
             [](gpgme_key_t k)->bool {return k->can_encrypt && k->can_sign;});
     if(keys.empty()) {
-        std::cerr << std::format("WARNING: No suitable key found for uid {}\n",
-                uid);
+        std::cerr << "WARNING: No suitable key found for uid " << uid <<
+            std::endl;
         std::cerr << "\tChanges will NOT be saved!\n";
     }
 }
@@ -85,48 +81,25 @@ int main(int argc, const char *argv[])
             check_uid(ctx, opts->uid);
         }
 
-        // Canonicalize path (in main because we need it later)
-        auto db_file = std::filesystem::weakly_canonical(opts->file);
-        // Create parent directories
-        std::filesystem::create_directories(db_file.parent_path());
-        // The tmp file **is** the lock. The flock() and fcntl() locking
-        // mechanisms are inherently racey WRT the write-to-temp-move semantics
-        // of a modified database. We can use exclusive creation of the emp
-        // file to close this race window.
-        std::filesystem::path tmp_file{db_file.string() + ".tmp"};
-        int fd = ::open(tmp_file.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRWXU);
-        if(errno == EEXIST)
-            throw std::runtime_error(std::format("File in use: {}",
-                        tmp_file.string()));
-        else if(fd < 0) {
-            throw std::system_error(errno, std::generic_category());
-        }
-        else
-            ::close(fd);
-        // If we get here, it is guaranteed that this process created the
-        // tmp_file.
-        // Abuse unique_ptr as a scope guard to remove tmp_file in any execution
-        // path except when it's explicitly released.
-        auto tf_sg = std::unique_ptr<int, std::function<void(int*)>> (&fd,
-                [&tmp_file](int*){ std::filesystem::remove(tmp_file); });
+        pwdb::lock_overwrite_file db_file_lock{std::filesystem::path(
+                opts->file)};
+        auto db_file = db_file_lock.file().string();
 
         // Check opts->create vs db_file existence
         bool db_file_exists = std::filesystem::exists(db_file);
         if(opts->create && db_file_exists) {
-            throw std::runtime_error(std::format("File exists: {}",
-                        db_file.string()));
+            throw std::runtime_error("File exists: "s + db_file);
         } else if(!opts->create && !db_file_exists) {
-            throw std::runtime_error(std::format("File does not exist: {}",
-                        db_file.string()));
+            throw std::runtime_error("File does not exist: "s + db_file);
         }
-        std::cerr << std::format("{} {}\n", opts->create ? "Creating" : "Using",
-                db_file.string());
+        std::cerr << (opts->create ? "Creating " : "Using ") << db_file <<
+            std::endl;
 
         // Create and initialize the database
         pwdb::db cdb{};
         if(opts->import_file.empty()) {
             // Read in the database
-            if(std::filesystem::exists(db_file)) {
+            if(db_file_exists) {
                 if(std::ifstream ifs(db_file); ifs.good()) {
                     gpgh::context ctx{opts->gpg_homedir};
                     cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
@@ -137,7 +110,7 @@ int main(int argc, const char *argv[])
             }
         } else {
             if(std::ifstream ifs(opts->import_file); ifs.good()) {
-                std::cerr << std::format("Importing {}\n", opts->import_file);
+                std::cerr << "Importing " << opts->import_file << std::endl;
                 gpgh::context ctx{opts->gpg_homedir};
                 cdb = pwdb::json2pb<pwdb::pb::DB>(ctx.decrypt(ifs));
                 check_gpg_verify_result(ctx);
@@ -175,7 +148,7 @@ int main(int argc, const char *argv[])
         // FIXME: if both --recrypt and --export-file are given, re-encrypted
         // database will not be saved, only exported.
         if(!opts->export_file.empty()) {
-            std::cerr << std::format("Exporting {}\n", opts->export_file);
+            std::cerr << "Exporting " << opts->export_file << std::endl;
             if(std::ofstream ofs(opts->export_file); ofs.good()) {
                 pwdb::db expdb{cdb.copy()};
                 gpgh::context ctx{opts->gpg_homedir};
@@ -206,8 +179,7 @@ int main(int argc, const char *argv[])
                 // TODO - additional recipients
                 pwdb::encode_data(ctx, cdb.uid(), cdb.pb(), out, true);
             };
-            pwdb::overwrite_file(db_file, tmp_file, encode);
-            tf_sg.release();
+            db_file_lock.overwrite(encode);
         }
 
     } catch(const std::runtime_error &e) {
