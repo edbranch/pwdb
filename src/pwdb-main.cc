@@ -32,6 +32,7 @@
 #include <filesystem>
 
 using namespace std::literals::string_literals;
+namespace fs = std::filesystem;
 
 void check_uid(gpgh::context &ctx, const std::string &uid)
 {
@@ -81,43 +82,38 @@ int main(int argc, const char *argv[])
             check_uid(ctx, opts->uid);
         }
 
-        pwdb::lock_overwrite_file db_file_lock{std::filesystem::path(
-                opts->file)};
+        pwdb::lock_overwrite_file db_file_lock{fs::path(opts->file)};
         auto db_file = db_file_lock.file().string();
 
         // Check opts->create vs db_file existence
-        bool db_file_exists = std::filesystem::exists(db_file);
+        bool db_file_exists = fs::exists(db_file);
         if(opts->create && db_file_exists) {
             throw std::runtime_error("File exists: "s + db_file);
         } else if(!opts->create && !db_file_exists) {
             throw std::runtime_error("File does not exist: "s + db_file);
         }
-        std::cerr << (opts->create ? "Creating " : "Using ") << db_file <<
+        std::cout << (opts->create ? "Creating " : "Using ") << db_file <<
             std::endl;
 
         // Create and initialize the database
         pwdb::db cdb{};
         if(opts->import_file.empty()) {
-            // Read in the database
             if(db_file_exists) {
-                if(std::ifstream ifs(db_file); ifs.good()) {
-                    gpgh::context ctx{opts->gpg_homedir};
-                    cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
-                    check_gpg_verify_result(ctx);
-                } else {
-                    throw std::system_error(errno, std::generic_category());
-                }
+                std::ifstream ifs(db_file, std::ios::in | std::ios::binary);
+                ifs.exceptions(std::ios::badbit | std::ios::failbit);
+                gpgh::context ctx{opts->gpg_homedir};
+                cdb = pwdb::decode_data<pwdb::pb::DB>(ctx, ifs);
+                check_gpg_verify_result(ctx);
             }
         } else {
-            if(std::ifstream ifs(opts->import_file); ifs.good()) {
-                std::cerr << "Importing " << opts->import_file << std::endl;
-                gpgh::context ctx{opts->gpg_homedir};
-                cdb = pwdb::json2pb<pwdb::pb::DB>(ctx.decrypt(ifs));
-                check_gpg_verify_result(ctx);
-                do_recrypt = true;
-            } else {
-                throw std::system_error(errno, std::generic_category());
-            }
+            std::cout << "Importing " << opts->import_file << std::endl;
+            std::ifstream ifs(opts->import_file,
+                    std::ios::in | std::ios::binary);
+            ifs.exceptions(std::ios::badbit | std::ios::failbit);
+            gpgh::context ctx{opts->gpg_homedir};
+            cdb = pwdb::json2pb<pwdb::pb::DB>(ctx.decrypt(ifs));
+            check_gpg_verify_result(ctx);
+            do_recrypt = true;
         }
 
         // Set signing and primary encryption uid
@@ -148,21 +144,24 @@ int main(int argc, const char *argv[])
         // FIXME: if both --recrypt and --export-file are given, re-encrypted
         // database will not be saved, only exported.
         if(!opts->export_file.empty()) {
-            std::cerr << "Exporting " << opts->export_file << std::endl;
-            if(std::ofstream ofs(opts->export_file); ofs.good()) {
-                pwdb::db expdb{cdb.copy()};
-                gpgh::context ctx{opts->gpg_homedir};
-                ctx.add_signer(expdb.uid());
-                db_decrypt_all_rcd_stores(ctx, expdb);
-                auto json = pwdb::pb2json(expdb.get_db());
-                auto keyfilt = [](gpgme_key_t k)->bool {
-                    return !k->revoked && !k->expired && k->can_encrypt &&
-                        k->can_sign;
-                };
-                auto keys = ctx.get_keys(expdb.uid(), false, keyfilt);
-                ctx.encrypt(keys, json, ofs, true);
-                return 0;
-            }
+            std::cout << "Exporting " << opts->export_file << std::endl;
+            std::ofstream ofs(opts->export_file,
+                    std::ios::out | std::ios::binary);
+            ofs.exceptions(std::ios::badbit | std::ios::failbit);
+            fs::permissions(opts->export_file,
+                    fs::perms::owner_read | fs::perms::owner_write);
+            pwdb::db expdb{cdb.copy()};
+            gpgh::context ctx{opts->gpg_homedir};
+            ctx.add_signer(expdb.uid());
+            db_decrypt_all_rcd_stores(ctx, expdb);
+            auto json = pwdb::pb2json(expdb.get_db());
+            auto keyfilt = [](gpgme_key_t k)->bool {
+                return !k->revoked && !k->expired && k->can_encrypt &&
+                    k->can_sign;
+            };
+            auto keys = ctx.get_keys(expdb.uid(), false, keyfilt);
+            ctx.encrypt(keys, json, ofs, true);
+            return 0;
         }
 
         // Run command interpreter

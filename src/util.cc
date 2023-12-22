@@ -36,7 +36,7 @@ extern "C" {
 namespace pwdb {
 
 using namespace std::literals::string_literals;
-namespace fs = ::std::filesystem;
+namespace fs = std::filesystem;
 
 std::string
 xdg_data_dir(void)
@@ -64,7 +64,8 @@ lock_overwrite_file(const std::filesystem::path &file) :
     tmp_file_{fs::path{file_.string() + ".tmp"}}
 {
     std::filesystem::create_directories(file_.parent_path());
-    int fd = ::open(tmp_file_.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRWXU);
+    int fd = ::open(tmp_file_.c_str(), O_WRONLY | O_CREAT | O_EXCL,
+            S_IRUSR | S_IWUSR);
     if(fd < 0) {
         if(errno == EEXIST) {
             throw std::runtime_error("File in use: "s + tmp_file_.string());
