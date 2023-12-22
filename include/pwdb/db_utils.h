@@ -27,8 +27,8 @@
 
 namespace pwdb {
 
-auto db_open_rcd_store(gpgh::context &ctx, const db &cdb,
-        pwdb::db::rcd_citer_t i)->pwdb::pb::Store;
+auto db_open_rcd_store(gpgh::context &ctx, const pb::Record &rcd)->
+    pwdb::pb::Store;
 void db_save_rcd_store(gpgh::context &ctx, db &cdb, const std::string &name,
         const pwdb::pb::Store &pb_store);
 void db_recrypt_rcd_stores(gpgh::context &ctx, db &cdb);

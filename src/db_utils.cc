@@ -25,10 +25,9 @@
 namespace pwdb {
 
 pwdb::pb::Store
-db_open_rcd_store(gpgh::context &ctx, const db &cdb, pwdb::db::rcd_citer_t i)
+db_open_rcd_store(gpgh::context &ctx, const pb::Record &rcd)
 {
     pb::Store store;
-    auto &rcd = i->second;
     if(rcd.has_store()) {
         store = rcd.store();
     } else if(!rcd.data().empty()) {
@@ -48,14 +47,14 @@ db_save_rcd_store(gpgh::context &ctx, db &cdb, const std::string &name,
 void db_recrypt_rcd_stores(gpgh::context &ctx, db &cdb)
 {
     for(auto i=cdb.begin(); i != cdb.end(); ++i) {
-        db_save_rcd_store(ctx, cdb, i->first, db_open_rcd_store(ctx, cdb, i));
+        db_save_rcd_store(ctx, cdb, i->first, db_open_rcd_store(ctx, i->second));
     }
 }
 
 void db_decrypt_all_rcd_stores(gpgh::context &ctx, db &cdb)
 {
     for(auto i=cdb.begin(); i != cdb.end(); ++i) {
-        cdb.set_store(i->first, db_open_rcd_store(ctx, cdb, i));
+        cdb.set_store(i->first, db_open_rcd_store(ctx, i->second));
     }
 }
 

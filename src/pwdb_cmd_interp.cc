@@ -129,7 +129,7 @@ def_interp(const cmd_interp::ops &ops)
                 return interp::result_add_history;
             }
             gpgh::context ctx{};
-            rcd_cmd_interp rcd_interp{db_open_rcd_store(ctx, cdb_, rcd_iter),
+            rcd_cmd_interp rcd_interp{db_open_rcd_store(ctx, rcd_iter->second),
                 interp_.ops()};
             {
                 // Use alternate terminal buffer when record is open
