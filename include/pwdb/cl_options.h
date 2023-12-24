@@ -23,23 +23,23 @@
 ***/
 
 #include <string>
-#include <optional>
 
 namespace pwdb {
 
 struct cl_options
 {
-    bool create;
-    bool recrypt;
-    std::string file;
+    bool help;
+    bool version;
+    std::string usage_msg;
+    std::string subcmd;
+    std::string pwdb_file;
     std::string uid;
-    std::string record;
     std::string gpg_homedir;
-    std::string export_file;
-    std::string import_file;
+    std::string infile;
+    std::string outfile;
 };
 
-std::optional<cl_options> cl_handle(int argc, const char *argv[]);
+cl_options cl_handle(int argc, const char *argv[]);
 
 } // namespace pwdb
 #endif // _pwdb_cl_options_h_
